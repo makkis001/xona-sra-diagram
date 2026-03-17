@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xona SRA — Physical Network Diagram</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f11;
+    --surface: #151820;
+    --surface2: #1c2028;
+    --border: #2a3040;
+    --border-bright: #3d4a5c;
+    --text: #d4dae6;
+    --text-muted: #6b7a90;
+    --text-dim: #3d4a5c;
+    --accent: #00c896;
+    --accent-dim: rgba(0,200,150,0.12);
+    --accent-glow: rgba(0,200,150,0.25);
+    --purple: #7c6ef0;
+    --purple-dim: rgba(124,110,240,0.15);
+    --coral: #e05a44;
+    --coral-dim: rgba(224,90,68,0.15);
+    --teal: #1eadc0;
+    --teal-dim: rgba(30,173,192,0.15);
+    --gray-dim: rgba(100,115,135,0.12);
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: 56px 1fr;
+    gap: 0;
+  }
+
+  /* Header */
+  header {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .logo-sep { color: var(--text-dim); margin: 0 4px; }
+  .header-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+  .header-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  /* Diagram panel */
+  .diagram-panel {
+    background: var(--bg);
+    overflow: auto;
+    padding: 24px;
+    border-right: 1px solid var(--border);
+  }
+
+  svg.diagram {
+    width: 100%;
+    max-width: 640px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* SVG node styles */
+  .zone-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    fill: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .node-title {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    fill: var(--text);
+  }
+  .node-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    fill: var(--text-muted);
+  }
+  .node-rect {
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .node-rect:hover { filter: brightness(1.4); }
+  .node-rect.active { filter: brightness(1.6); stroke-width: 1.5px !important; }
+
+  /* Arrow connector */
+  .arr { fill: none; stroke: #2a3040; stroke-width: 1; }
+  .arr-auth { fill: none; stroke: #5a4db0; stroke-width: 1; }
+  .arr-mgmt { fill: none; stroke: #0f6e56; stroke-width: 1; stroke-dasharray: 4 3; }
+  .arr-session { fill: none; stroke: #1a3a30; stroke-width: 1; }
+
+  /* Answer panel */
+  .answer-panel {
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .panel-question {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 20px;
+  }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+  }
+  .panel-body::-webkit-scrollbar { width: 4px; }
+  .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .answer-text {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  .idle-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 40px 20px;
+  }
+  .idle-icon {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .idle-text {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .loading-dots {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .loading-dots span {
+    width: 4px; height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1.2s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+  .panel-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .api-key-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .api-key-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .api-key-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .api-key-input:focus { border-color: var(--accent); color: var(--text); }
+  .api-key-input::placeholder { color: var(--text-dim); }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .legend-line {
+    width: 20px;
+    height: 1px;
+    background: #2a3040;
+  }
+  .legend-line.auth { background: #5a4db0; }
+  .legend-line.mgmt { background: #0f6e56; background: repeating-linear-gradient(90deg,#0f6e56 0,#0f6e56 4px,transparent 4px,transparent 7px); height: 1px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">Xona SRA<span class="logo-sep">/</span>Physical layout</span>
+  <span class="header-sub">click any node to query</span>
+  <span class="header-badge">interactive</span>
+</header>
+
+<!-- DIAGRAM -->
+<div class="diagram-panel">
+  <svg class="diagram" viewBox="0 0 620 800" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#2a3040" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <marker id="arr-auth" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#5a4db0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <marker id="arr-mgmt" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#0f6e56" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+
+    <!-- ── Internet / WAN zone ── -->
+    <rect x="20" y="16" width="580" height="110" rx="8" fill="#151820" stroke="#2a3040" stroke-width="0.5"/>
+    <text class="zone-label" x="34" y="34">Internet / WAN</text>
+
+    <!-- User nodes -->
+    <rect id="n-laptop" class="node-rect" x="40" y="44" width="160" height="52" rx="5" fill="#1c2028" stroke="#2a3040" stroke-width="0.5"
+      onclick="ask(this,'How does a remote user connect through Xona SRA? What happens on their device?')"/>
+    <text class="node-title" x="120" y="66" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Remote laptop / PC</text>
+    <text class="node-sub" x="120" y="84" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Browser only · no agent</text>
+
+    <rect id="n-vendor" class="node-rect" x="230" y="44" width="160" height="52" rx="5" fill="#1c2028" stroke="#2a3040" stroke-width="0.5"
+      onclick="ask(this,'How does a third-party vendor connect to OT systems through Xona? What controls apply?')"/>
+    <text class="node-title" x="310" y="66" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Vendor / contractor</text>
+    <text class="node-sub" x="310" y="84" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Browser · zero footprint</text>
+
+    <rect id="n-mobile" class="node-rect" x="420" y="44" width="160" height="52" rx="5" fill="#1c2028" stroke="#2a3040" stroke-width="0.5"
+      onclick="ask(this,'Does Xona support mobile device access? What are the limitations?')"/>
+    <text class="node-title" x="500" y="66" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Mobile / tablet</text>
+    <text class="node-sub" x="500" y="84" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Any modern browser</text>
+
+    <!-- Arrows to perimeter FW -->
+    <line x1="120" y1="96" x2="252" y2="156" class="arr" marker-end="url(#arr)"/>
+    <line x1="310" y1="96" x2="310" y2="156" class="arr" marker-end="url(#arr)"/>
+    <line x1="500" y1="96" x2="368" y2="156" class="arr" marker-end="url(#arr)"/>
+
+    <!-- ── Perimeter Firewall ── -->
+    <rect id="n-fw1" class="node-rect" x="200" y="156" width="220" height="48" rx="5" fill="#1e1510" stroke="#5a3020" stroke-width="0.5"
+      onclick="ask(this,'What role does the perimeter firewall play in a Xona SRA deployment? What ports need to be open?')"/>
+    <text class="node-title" x="310" y="174" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Perimeter firewall</text>
+    <text class="node-sub" x="310" y="191" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">HTTPS 443 inbound only</text>
+
+    <!-- ── DMZ zone ── -->
+    <rect x="20" y="236" width="580" height="140" rx="8" fill="#13121e" stroke="#2a2a40" stroke-width="0.5"/>
+    <text class="zone-label" x="34" y="254">DMZ</text>
+
+    <rect id="n-xcm" class="node-rect" x="60" y="264" width="210" height="52" rx="5" fill="#1a1830" stroke="#3d3a6a" stroke-width="0.5"
+      onclick="ask(this,'What is the Xona Central Manager (XCM)? Where is it physically installed and what does it do?')"/>
+    <text class="node-title" x="165" y="283" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">XCM appliance</text>
+    <text class="node-sub" x="165" y="300" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">VM or 1U rack · no cloud needed</text>
+
+    <rect id="n-idp" class="node-rect" x="350" y="264" width="210" height="52" rx="5" fill="#1a1830" stroke="#3d3a6a" stroke-width="0.5"
+      onclick="ask(this,'What identity providers and MFA solutions does Xona integrate with? How does authentication work?')"/>
+    <text class="node-title" x="455" y="283" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">IdP / MFA server</text>
+    <text class="node-sub" x="455" y="300" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">SAML · LDAP · SSO</text>
+
+    <!-- Arrows FW → DMZ -->
+    <line x1="280" y1="204" x2="200" y2="264" class="arr-auth" marker-end="url(#arr-auth)"/>
+    <line x1="340" y1="204" x2="410" y2="264" class="arr-auth" stroke-dasharray="4 3" marker-end="url(#arr-auth)"/>
+
+    <!-- ── Internal Firewall ── -->
+    <rect id="n-fw2" class="node-rect" x="200" y="412" width="220" height="48" rx="5" fill="#1e1510" stroke="#5a3020" stroke-width="0.5"
+      onclick="ask(this,'What is the role of the internal firewall between the DMZ and OT network in Xona? How should it be configured?')"/>
+    <text class="node-title" x="310" y="430" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Internal firewall / L3</text>
+    <text class="node-sub" x="310" y="447" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">DMZ → OT segmentation</text>
+
+    <line x1="200" y1="342" x2="270" y2="412" class="arr-auth" marker-end="url(#arr-auth)"/>
+
+    <!-- ── OT / ICS zone ── -->
+    <rect x="20" y="492" width="580" height="288" rx="8" fill="#0d1612" stroke="#1a3028" stroke-width="0.5"/>
+    <text class="zone-label" x="34" y="510">OT / ICS network</text>
+
+    <line x1="310" y1="460" x2="310" y2="492" class="arr" stroke="#0f6e56" marker-end="url(#arr-mgmt)"/>
+
+    <!-- CSG A -->
+    <rect id="n-csg-a" class="node-rect" x="50" y="516" width="210" height="52" rx="5" fill="#0e1e1a" stroke="#1a4a3a" stroke-width="0.5"
+      onclick="ask(this,'What is the Xona Critical System Gateway (CSG)? What form factors are available and how is it installed on site?')"/>
+    <text class="node-title" x="155" y="535" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">CSG — Site A</text>
+    <text class="node-sub" x="155" y="552" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">1U rack · DIN rail · VM</text>
+
+    <!-- CSG B -->
+    <rect id="n-csg-b" class="node-rect" x="360" y="516" width="210" height="52" rx="5" fill="#0e1e1a" stroke="#1a4a3a" stroke-width="0.5"
+      onclick="ask(this,'Can multiple Xona CSGs across different sites be managed by a single XCM? How does federation work?')"/>
+    <text class="node-title" x="465" y="535" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">CSG — Site B</text>
+    <text class="node-sub" x="465" y="552" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">1U rack · DIN rail · VM</text>
+
+    <!-- OT switches -->
+    <rect x="80" y="606" width="150" height="36" rx="4" fill="#111a16" stroke="#1a3028" stroke-width="0.5"/>
+    <text class="node-sub" x="155" y="624" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">OT switch — site A</text>
+
+    <rect x="390" y="606" width="150" height="36" rx="4" fill="#111a16" stroke="#1a3028" stroke-width="0.5"/>
+    <text class="node-sub" x="465" y="624" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">OT switch — site B</text>
+
+    <line x1="155" y1="568" x2="155" y2="606" class="arr-session" stroke="#1a3028" marker-end="url(#arr)"/>
+    <line x1="465" y1="568" x2="465" y2="606" class="arr-session" stroke="#1a3028" marker-end="url(#arr)"/>
+
+    <!-- Assets site A -->
+    <rect id="n-hmi" class="node-rect" x="40" y="682" width="90" height="44" rx="4" fill="#111a16" stroke="#1a3028" stroke-width="0.5"
+      onclick="ask(this,'What protocols does Xona support for HMI access? How does protocol isolation work at the CSG?')"/>
+    <text class="node-title" x="85" y="698" text-anchor="middle" dominant-baseline="central" style="pointer-events:none;font-size:11px">HMI</text>
+    <text class="node-sub" x="85" y="714" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">RDP / VNC</text>
+
+    <rect id="n-scada" class="node-rect" x="150" y="682" width="90" height="44" rx="4" fill="#111a16" stroke="#1a3028" stroke-width="0.5"
+      onclick="ask(this,'How does Xona handle SCADA system access? What protocols are supported?')"/>
+    <text class="node-title" x="195" y="698" text-anchor="middle" dominant-baseline="central" style="pointer-events:none;font-size:11px">SCADA</text>
+    <text class="node-sub" x="195" y="714" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">SSH / RDP</text>
+
+    <rect id="n-ews" class="node-rect" x="260" y="682" width="90" height="44" rx="4" fill="#111a16" stroke="#1a3028" stroke-width="0.5"
+      onclick="ask(this,'Does Xona support engineering workstation (EWS) access? How does it handle legacy operating systems?')"/>
+    <text class="node-title" x="305" y="698" text-anchor="middle" dominant-baseline="central" style="pointer-events:none;font-size:11px">EWS</text>
+    <text class="node-sub" x="305" y="714" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">SSH / RDP</text>
+
+    <!-- Assets site B -->
+    <rect id="n-plc" class="node-rect" x="370" y="682" width="90" height="44" rx="4" fill="#111a16" stroke="#1a3028" stroke-width="0.5"
+      onclick="ask(this,'How does Xona connect to PLCs and ICS devices? Does it require any software on the device?')"/>
+    <text class="node-title" x="415" y="698" text-anchor="middle" dominant-baseline="central" style="pointer-events:none;font-size:11px">PLC / ICS</text>
+    <text class="node-sub" x="415" y="714" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Web / RDP</text>
+
+    <rect id="n-webhmi" class="node-rect" x="470" y="682" width="90" height="44" rx="4" fill="#111a16" stroke="#1a3028" stroke-width="0.5"
+      onclick="ask(this,'Does Xona support web-based HMIs? How are browser-based OT interfaces handled?')"/>
+    <text class="node-title" x="515" y="698" text-anchor="middle" dominant-baseline="central" style="pointer-events:none;font-size:11px">Web HMI</text>
+    <text class="node-sub" x="515" y="714" text-anchor="middle" dominant-baseline="central" style="pointer-events:none">Browser</text>
+
+    <!-- Switch to asset connectors -->
+    <line x1="130" y1="642" x2="95" y2="682" class="arr" stroke="#1a3028" marker-end="url(#arr)"/>
+    <line x1="155" y1="642" x2="195" y2="682" class="arr" stroke="#1a3028" marker-end="url(#arr)"/>
+    <line x1="175" y1="642" x2="295" y2="682" class="arr" stroke="#1a3028" marker-end="url(#arr)"/>
+    <line x1="420" y1="642" x2="415" y2="682" class="arr" stroke="#1a3028" marker-end="url(#arr)"/>
+    <line x1="465" y1="642" x2="510" y2="682" class="arr" stroke="#1a3028" marker-end="url(#arr)"/>
+
+    <!-- XCM management plane to CSGs -->
+    <path d="M130 342 L130 768 L50 768 L50 568" fill="none" stroke="#0f6e56" stroke-width="0.8" stroke-dasharray="5 4" marker-end="url(#arr-mgmt)"/>
+    <path d="M130 342 L130 768 L570 768 L570 568" fill="none" stroke="#0f6e56" stroke-width="0.8" stroke-dasharray="5 4" marker-end="url(#arr-mgmt)"/>
+  </svg>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-line auth"></div>Auth flow</div>
+    <div class="legend-item"><div class="legend-line mgmt"></div>XCM management plane</div>
+    <div class="legend-item"><div class="legend-line"></div>Session / access</div>
+  </div>
+</div>
+
+<!-- ANSWER PANEL -->
+<div class="answer-panel">
+  <div class="panel-header">
+    <div class="panel-title">Query</div>
+    <div class="panel-question" id="panel-question">&nbsp;</div>
+  </div>
+  <div class="panel-body" id="panel-body">
+    <div class="idle-state" id="idle-state">
+      <div class="idle-icon">→</div>
+      <div class="idle-text">Click any node in the diagram<br>to ask Claude about it.</div>
+    </div>
+    <div class="answer-text" id="answer-text" style="display:none"></div>
+  </div>
+  <div class="panel-footer">
+    <div class="api-key-row">
+      <span class="api-key-label">API KEY</span>
+      <input class="api-key-input" type="password" id="api-key" placeholder="sk-ant-...  (stored locally only)"/>
+    </div>
+  </div>
+</div>
+
+<script>
+  let activeNode = null;
+
+  function ask(rect, question) {
+    if (activeNode) activeNode.classList.remove('active');
+    activeNode = rect;
+    rect.classList.add('active');
+
+    document.getElementById('panel-question').textContent = question;
+    document.getElementById('idle-state').style.display = 'none';
+    const answerEl = document.getElementById('answer-text');
+    answerEl.style.display = 'block';
+    answerEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+
+    const apiKey = document.getElementById('api-key').value.trim();
+    if (!apiKey) {
+      answerEl.textContent = 'Enter your Anthropic API key in the field below to enable answers.';
+      return;
+    }
+
+    const systemPrompt = `You are a concise technical expert on Xona Systems' Secure Remote Access (SRA) platform for OT/ICS environments. 
+Answer questions clearly and accurately, focusing on deployment architecture, components (CSG, XCM), protocols, and security design. 
+Keep answers to 3-5 short paragraphs. Use plain text, no markdown formatting.`;
+
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: question }]
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        answerEl.textContent = 'API error: ' + data.error.message;
+        return;
+      }
+      const text = data.content?.map(b => b.text || '').join('') || 'No response.';
+      answerEl.textContent = text;
+    })
+    .catch(err => {
+      answerEl.textContent = 'Request failed: ' + err.message;
+    });
+  }
+</script>
+</body>
+</html>
